@@ -1,0 +1,208 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Requests / Sec by Provider",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (rate(llmgw_requests_total[1m]))",
+          "legendFormat": "{{provider}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Error Rate by Provider & Taxonomy",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider, error_type) (rate(llmgw_errors_total[1m]))",
+          "legendFormat": "{{provider}} - {{error_type}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Latency Quantiles (p50 / p90 / p99) by Provider (s)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le, provider) (rate(llmgw_request_latency_seconds_bucket[1m])))",
+          "legendFormat": "p50 {{provider}}"
+        },
+        {
+          "expr": "histogram_quantile(0.90, sum by (le, provider) (rate(llmgw_request_latency_seconds_bucket[1m])))",
+          "legendFormat": "p90 {{provider}}"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le, provider) (rate(llmgw_request_latency_seconds_bucket[1m])))",
+          "legendFormat": "p99 {{provider}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Circuit Breaker State (0=CLOSED, 1=HALF_OPEN, 2=OPEN)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "llmgw_circuit_breaker_state",
+          "legendFormat": "{{provider}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Circuit Breaker Transitions & Failovers",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 8,
+        "y": 8,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider, to_state) (increase(llmgw_circuit_breaker_transitions_total[5m]))",
+          "legendFormat": "CB {{provider}}->{{to_state}}"
+        },
+        {
+          "expr": "sum by (from_provider, to_provider) (increase(llmgw_failovers_total[5m]))",
+          "legendFormat": "Failover {{from_provider}}->{{to_provider}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Hedging Volume & Win Rate",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 16,
+        "y": 8,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum by (winner_provider) (rate(llmgw_hedged_requests_total[1m]))",
+          "legendFormat": "Hedge winner: {{winner_provider}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Redis Queue Depth, Retries & Dead Letters",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "llmgw_queue_depth",
+          "legendFormat": "Queue Depth"
+        },
+        {
+          "expr": "increase(llmgw_queue_retries_total[5m])",
+          "legendFormat": "Queue Retries"
+        },
+        {
+          "expr": "increase(llmgw_queue_dead_letters_total[5m])",
+          "legendFormat": "Dead Letters"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Hourly Cost Burn Rate ($/hr) by Tenant & Feature",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 8,
+        "y": 16,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum by (tenant_id, feature_name) (rate(llmgw_estimated_cost_usd_total[5m])) * 3600",
+          "legendFormat": "{{tenant_id}} / {{feature_name}}"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Token Usage Rate & Effective Availability (%)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 16,
+        "y": 16,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum by (tenant_id, token_type) (rate(llmgw_tokens_total[1m]))",
+          "legendFormat": "{{tenant_id}} ({{token_type}})"
+        },
+        {
+          "expr": "100 * (sum(rate(llmgw_requests_total{outcome=~\"success|queued\"}[1m])) / clamp_min(sum(rate(llmgw_requests_total[1m])), 0.001))",
+          "legendFormat": "Availability %"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "llmops",
+    "gateway",
+    "self-healing"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "title": "Self-Healing LLM Gateway Observability",
+  "uid": "llmgw-observability-v1",
+  "version": 1
+}
